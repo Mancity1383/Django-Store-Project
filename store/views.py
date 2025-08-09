@@ -1,13 +1,14 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet,GenericViewSet
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.generics import CreateAPIView,UpdateAPIView
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.filters import SearchFilter,OrderingFilter
-from .models import Product,Collection,OrderItem,Review
+from .models import Product,Collection,OrderItem,Review,Cart,CartItem
 from .filters import ProductFIlters
-from .serializers import ProductSerializers,CollectionSerializers,ReviewSerializers
+from .serializers import ProductSerializers,CollectionSerializers,ReviewSerializers,CartSerializers,CartItemsSerializers
 
 
 class ProductViewSet(ModelViewSet):
@@ -57,3 +58,17 @@ class ReviewViewSet(ModelViewSet):
 
     def get_serializer_context(self):
         return {'product_id':self.kwargs['product_pk'],'request':self.request}
+    
+class CartViewSet(CreateAPIView,GenericViewSet):
+    queryset = Cart.objects.all()
+    serializer_class = CartSerializers
+
+    def get_serializer_context(self):
+        return {'request':self.request}
+    
+class CartItemsViewSet(ModelViewSet):
+    queryset = CartItem.objects.select_related('product').all()
+    serializer_class = CartItemsSerializers
+
+    def get_serializer_context(self):
+        return {'cart_id':self.kwargs['cart_pk'],'request':self.request}
