@@ -70,5 +70,8 @@ class CartItemsViewSet(ModelViewSet):
     queryset = CartItem.objects.select_related('product').all()
     serializer_class = CartItemsSerializers
 
+    def get_queryset(self):
+        return CartItem.objects.filter(cart_id=self.kwargs['cart_pk'])
+    
     def get_serializer_context(self):
         return {'cart_id':self.kwargs['cart_pk'],'request':self.request}
