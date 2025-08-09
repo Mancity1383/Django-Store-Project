@@ -12,7 +12,7 @@ class CollectionSerializers(serializers.ModelSerializer):
 class ProductSerializers(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ['id','title','price','collection']
+        fields = ['id','description','title','price','inventory','collection']
     
 class ReviewSerializers(serializers.ModelSerializer):
     class Meta:
@@ -23,21 +23,35 @@ class ReviewSerializers(serializers.ModelSerializer):
         with transaction.atomic():
             validated_data['product_id'] = self.context['product_id']
             return Review.objects.create(**validated_data)
-        
-class CartSerializers(serializers.ModelSerializer):
-    class Meta:
-        model = Cart
-        fields = ['id']
-
-    id = serializers.UUIDField(read_only=True)
     
+class SimpleProductSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ['id','title','price','collection']
+
 class CartItemsSerializers(serializers.ModelSerializer):
+    product = SimpleProductSerializers()
+    total_price = serializers.SerializerMethodField(method_name='get_total_price')
     class Meta:
         model = CartItem
-        fields = ['product','quantity']
+        fields = ['id','product','quantity','total_price']
+
+    def get_total_price(self,cartitem:CartItem):
+        return cartitem.product.price * cartitem.quantity
 
     def create(self, validated_data):
          with transaction.atomic():
             validated_data['cart_id'] = self.context['cart_id']
             return CartItem.objects.create(**validated_data)
-    
+         
+class CartSerializers(serializers.ModelSerializer):
+    items = CartItemsSerializers(many=True,read_only=True)
+    class Meta:
+        model = Cart
+        fields = ['id','items','total_price']
+
+    id = serializers.UUIDField(read_only=True)
+    total_price = serializers.SerializerMethodField(method_name='get_total_price')
+
+    def get_total_price(self,cart:Cart):
+        return  sum([item.product.price * item.quantity for item in cart.items.all() ])

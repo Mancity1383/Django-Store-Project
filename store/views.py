@@ -3,7 +3,7 @@ from django.db.models import Count
 from rest_framework.viewsets import ModelViewSet,GenericViewSet
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.generics import CreateAPIView,UpdateAPIView
+from rest_framework.mixins import CreateModelMixin,RetrieveModelMixin
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.filters import SearchFilter,OrderingFilter
 from .models import Product,Collection,OrderItem,Review,Cart,CartItem
@@ -59,8 +59,8 @@ class ReviewViewSet(ModelViewSet):
     def get_serializer_context(self):
         return {'product_id':self.kwargs['product_pk'],'request':self.request}
     
-class CartViewSet(CreateAPIView,GenericViewSet):
-    queryset = Cart.objects.all()
+class CartViewSet(CreateModelMixin,RetrieveModelMixin,GenericViewSet):
+    queryset = Cart.objects.prefetch_related('items').all()
     serializer_class = CartSerializers
 
     def get_serializer_context(self):
