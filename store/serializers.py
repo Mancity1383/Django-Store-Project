@@ -78,8 +78,22 @@ class CartSerializers(serializers.ModelSerializer):
         return  sum([item.product.price * item.quantity for item in cart.items.all() ])
 
 class CustomerSerializers(serializers.ModelSerializer):
-    user = serializers.IntegerField()
-    
+    user_id = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Customer
-        fields = ['id','user','phone','birth_date','membership']
+        fields = ['user_id','phone','birth_date','membership']
+
+    def save(self, **kwargs):
+        user_id = self.context['user_id']
+
+        try:
+            customer = Customer.objects.get(user_id=user_id)
+            for attr, value in self.validated_data.items():
+                setattr(customer, attr, value)
+            customer.save()
+            self.instance = customer
+        except Customer.DoesNotExist:
+            self.instance = Customer.objects.create(user_id=user_id, **self.validated_data)
+
+        return self.instance

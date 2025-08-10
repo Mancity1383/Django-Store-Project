@@ -94,4 +94,5 @@ class CustmerViewSet(CreateModelMixin,RetrieveModelMixin,UpdateModelMixin,Generi
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializers
 
-    
+    def get_serializer_context(self):
+        return {'user_id':self.request.user.id}
