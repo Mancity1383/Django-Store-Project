@@ -1,5 +1,6 @@
 import uuid
 from django.db import models
+from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
 from django.conf import settings
@@ -42,7 +43,6 @@ class Review(models.Model):
     description = models.TextField()
     date = models.DateTimeField(auto_now_add=True)
     
-
 class Customer(models.Model):
     MEMBERSHIP_BRONZE = 'B'
     MEMBERSHIP_SILVER = 'S'
@@ -52,20 +52,19 @@ class Customer(models.Model):
         (MEMBERSHIP_BRONZE,'Bronze'),
         (MEMBERSHIP_GOLD,'Gold')
     ]
-    first_name = models.CharField(max_length=255)
-    last_name = models.CharField(max_length=255)
-    email = models.EmailField(unique=True,db_index=True)
     phone = models.CharField(max_length=20)
     birth_date = models.DateField(blank=True,null=True)
     membership = models.CharField(max_length=1,choices=MEMBERSHIP_CHOICES,default=MEMBERSHIP_BRONZE)
+    user : AbstractUser = models.OneToOneField(settings.AUTH_USER_MODEL,on_delete=models.CASCADE)
 
-    class Meta:
-        indexes = [
-            models.Index(fields=['first_name','last_name'])
-        ]
+    def first_name(self):
+        return self.user.first_name
     
+    def last_name(self):
+        return self.user.last_name
+
     def __str__(self):
-        return f'{self.first_name} {self.last_name}'
+        return f'{self.user.first_name} {self.user.last_name}'
 
 class Order(models.Model):
     PAYMENT_CHOICES = [
@@ -75,7 +74,7 @@ class Order(models.Model):
     ]
     placed_at = models.DateTimeField(auto_now_add=True)
     payment_status = models.CharField(max_length=1,choices=PAYMENT_CHOICES,default='P')
-    customer = models.ForeignKey(Customer,on_delete=models.PROTECT)
+    customer = models.ForeignKey(Customer,on_delete=models.PROTECT,related_name='orders')
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order,on_delete=models.PROTECT)

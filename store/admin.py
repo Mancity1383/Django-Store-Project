@@ -71,15 +71,22 @@ class ProductAdmin(admin.ModelAdmin):
         
 @admin.register(models.Customer)
 class CustomerAdmin(admin.ModelAdmin):
-    list_display = ["customer_full_name",'membership']
+    list_display = ["customer_full_name",'membership','orders_count']
     list_editable = ["membership"]
-    ordering = ['first_name','last_name']
     list_per_page = 10
     search_fields = ['customer_full_name']
 
-    @admin.display(description="Full_Name")
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related('user').prefetch_related('orders')
+
+    @admin.display(description="Full_Name",ordering='user__last_name')
     def customer_full_name(self,obj):
-        return f"{obj.first_name} {obj.last_name}".title()
+        return f"{obj.user.first_name} {obj.user.last_name}".title()
+    
+    @admin.display(description="Orders Count")
+    def orders_count(self,obj):
+        return obj.orders.count()
     
 class OrderItemInLine(admin.TabularInline):
     formset = OrderItemInlineFormset
