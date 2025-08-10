@@ -1,5 +1,6 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count
+from rest_framework.decorators import action
 from rest_framework.viewsets import ModelViewSet,GenericViewSet
 from rest_framework.response import Response
 from rest_framework import status
@@ -90,9 +91,21 @@ class CartItemsViewSet(ModelViewSet):
         return {'cart_id':self.kwargs['cart_pk'],'request':self.request}
     
 
-class CustmerViewSet(CreateModelMixin,RetrieveModelMixin,UpdateModelMixin,GenericViewSet):
+class CustomerViewSet(CreateModelMixin,RetrieveModelMixin,UpdateModelMixin,GenericViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializers
 
     def get_serializer_context(self):
         return {'user_id':self.request.user.id}
+    
+    @action(detail=False,methods=['GET','PUT'])
+    def me(self,request):
+        customer,created = Customer.objects.get_or_create(user_id=request.user.id)
+        if self.request.method == 'GET':
+            serializer = CustomerSerializers(customer)
+            return Response(serializer.data)
+        if self.request.method == 'PUT':
+            serializer = CustomerSerializers(customer,data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
