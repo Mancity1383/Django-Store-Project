@@ -8,7 +8,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.filters import SearchFilter,OrderingFilter
 from .models import Product,Collection,OrderItem,Review,Cart,CartItem
 from .filters import ProductFIlters
-from .serializers import ProductSerializers,CollectionSerializers,ReviewSerializers,CartSerializers,GetCartItemsSerializers,AddCartItemSerializers
+from .serializers import *
 
 class ProductViewSet(ModelViewSet):
     queryset = Product.objects.all()
@@ -74,10 +74,13 @@ class CartViewSet(CreateModelMixin,RetrieveModelMixin,DestroyModelMixin,GenericV
     #     return Response({'deleted':'The Cart got deleted'},status=status.HTTP_204_NO_CONTENT)
     
 class CartItemsViewSet(ModelViewSet):
+    http_method_names = ['get','post','delete','patch']
     
     def get_serializer_class(self):
         if self.request.method == 'POST':
             return AddCartItemSerializers
+        elif self.request.method == 'PATCH':
+            return UpdateCartItemSerializers
         return GetCartItemsSerializers
 
     def get_queryset(self):
