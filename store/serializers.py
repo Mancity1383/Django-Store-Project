@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db import transaction
-from .models import Product,Collection,Review,Cart,CartItem
+from .models import *
 
 class CollectionSerializers(serializers.ModelSerializer):
     class Meta:
@@ -76,3 +76,10 @@ class CartSerializers(serializers.ModelSerializer):
 
     def get_total_price(self,cart:Cart):
         return  sum([item.product.price * item.quantity for item in cart.items.all() ])
+
+class CustomerSerializers(serializers.ModelSerializer):
+    user = serializers.IntegerField()
+    
+    class Meta:
+        model = Customer
+        fields = ['id','user','phone','birth_date','membership']
