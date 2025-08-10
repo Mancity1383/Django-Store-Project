@@ -114,3 +114,16 @@ class CustomerViewSet(ModelViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data)
+
+class OrderViewSet(ModelViewSet):
+    
+    def get_queryset(self):
+        return Order.objects.select_related('customer').filter(customer__user_id=self.request.user.id)
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return POSTOrdersSerializers
+        return GETOrdersSerializers
+    
+    def get_serializer_context(self):
+        return {'user_id':self.request.user.id,'request':self.request}

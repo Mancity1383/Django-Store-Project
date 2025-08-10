@@ -37,7 +37,7 @@ class CollectionAdmin(admin.ModelAdmin):
         return format_html(f'<a href ="{url}">{collection.product_count}</a>')
     
     def get_queryset(self, request):
-        return super().get_queryset(request).annotate(product_count = Count('product'))
+        return super().get_queryset(request).annotate(product_count = Count('products'))
 
 class TaggedInLine(GenericTabularInline):
     autocomplete_fields = ['tag']

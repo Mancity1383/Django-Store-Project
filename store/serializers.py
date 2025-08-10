@@ -97,3 +97,56 @@ class CustomerSerializers(serializers.ModelSerializer):
     #         self.instance = Customer.objects.create(user_id=user_id, **self.validated_data)
 
     #     return self.instance
+
+class GETOrdersSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = ['id','customer_id','placed_at','payment_status']
+
+class POSTOrdersSerializers(serializers.ModelSerializer):
+    cart_id = serializers.UUIDField()
+    class Meta:
+        model = Order
+        fields = ['cart_id']
+
+    def save(self, **kwargs):
+        with transaction.atomic():
+            cart_id = self.validated_data['cart_id']
+            user_id = self.context['user_id']
+
+            customer = Customer.objects.get(user_id=user_id)
+
+            cart_items = CartItem.objects.select_related('product').filter(cart_id=cart_id)
+            
+            order = Order.objects.create(customer_id = customer.id)
+
+            order_items = []
+            products_to_update = []
+            
+            for item in cart_items:
+                product = item.product
+                quantity = item.quantity
+                unit_price = product.price * quantity
+
+                if product.inventory < quantity:
+                    raise ValidationError(f"Quantity Error for {product.title}")
+
+                order_items.append(OrderItem(
+                    order=order,
+                    product=product,
+                    quantity=quantity,
+                    unit_price=unit_price
+                ))
+                
+                product.inventory -= quantity
+                products_to_update.append(product)
+            
+            OrderItem.objects.bulk_create(order_items)
+
+            Product.objects.bulk_update(products_to_update, ['inventory'])
+
+            CartItem.objects.filter(cart_id=cart_id).delete()
+                
+            Cart.objects.filter(pk=cart_id).delete()
+
+            return order
