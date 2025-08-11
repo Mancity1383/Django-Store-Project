@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.db import transaction
 from .models import *
+import re
 
 class CollectionSerializers(serializers.ModelSerializer):
     class Meta:
@@ -46,19 +47,27 @@ class AddCartItemSerializers(serializers.ModelSerializer):
         fields = ['product','quantity']
 
     def save(self, **kwargs):
-        product = self.validated_data['product']
-        quantity = self.validated_data['quantity']
-        cart_id = self.context['cart_id']
-
-        try:
-            cartitem = CartItem.objects.get(cart_id=cart_id,product=product)
-            cartitem.quantity += quantity
-            cartitem.save()
-            self.instance = cartitem
-        except CartItem.DoesNotExist:
-            self.instance = CartItem.objects.create(cart_id=cart_id,**self.validated_data)
-        
-        return self.instance
+        with transaction.atomic():
+            product : Product = self.validated_data['product']
+            quantity = self.validated_data['quantity']
+            cart_id = self.context['cart_id']
+            
+            if product.inventory >= quantity:
+                print(product.inventory)
+                try:
+                    cartitem = CartItem.objects.get(cart_id=cart_id,product=product)
+                    cartitem.quantity += quantity
+                    cartitem.save()
+                    self.instance = cartitem
+                except CartItem.DoesNotExist:
+                    self.instance = CartItem.objects.create(cart_id=cart_id,**self.validated_data)
+                
+                return self.instance
+            
+            else:
+                raise serializers.ValidationError({
+                    'quantity': f"The inventory of product {product.title} is {product.inventory}, requested {quantity}."
+                })
     
 class UpdateCartItemSerializers(serializers.ModelSerializer):
     class Meta:
@@ -98,16 +107,29 @@ class CustomerSerializers(serializers.ModelSerializer):
 
     #     return self.instance
 
+class OrderItemSerializers(serializers.ModelSerializer):
+    product = SimpleProductSerializers()
+    class Meta:
+        model = OrderItem
+        fields =['id','product','quantity','unit_price']
+
 class GETOrdersSerializers(serializers.ModelSerializer):
+    items = OrderItemSerializers(many=True,read_only=True)
+    customer = serializers.StringRelatedField(read_only=True)
     class Meta:
         model = Order
-        fields = ['id','customer_id','placed_at','payment_status']
+        fields = ['id','customer','placed_at','payment_status','items']
 
 class POSTOrdersSerializers(serializers.ModelSerializer):
     cart_id = serializers.UUIDField()
     class Meta:
         model = Order
         fields = ['cart_id']
+
+    def validate_cart_id(self, cart_id):
+        if not Cart.objects.filter(pk=cart_id).exists():
+            raise ValidationError("cart_id doesn't exist")
+        return cart_id
 
     def save(self, **kwargs):
         with transaction.atomic():
@@ -117,6 +139,9 @@ class POSTOrdersSerializers(serializers.ModelSerializer):
             customer = Customer.objects.get(user_id=user_id)
 
             cart_items = CartItem.objects.select_related('product').filter(cart_id=cart_id)
+            
+            if cart_items.count() <= 0 :
+                raise ValidationError({'items':"There is no item in this cart"})
             
             order = Order.objects.create(customer_id = customer.id)
 
@@ -129,7 +154,7 @@ class POSTOrdersSerializers(serializers.ModelSerializer):
                 unit_price = product.price * quantity
 
                 if product.inventory < quantity:
-                    raise ValidationError(f"Quantity Error for {product.title}")
+                    raise ValidationError({'quantity':f"Quantity Error for {product.title}"})
 
                 order_items.append(OrderItem(
                     order=order,
@@ -145,8 +170,6 @@ class POSTOrdersSerializers(serializers.ModelSerializer):
 
             Product.objects.bulk_update(products_to_update, ['inventory'])
 
-            CartItem.objects.filter(cart_id=cart_id).delete()
-                
             Cart.objects.filter(pk=cart_id).delete()
 
             return order

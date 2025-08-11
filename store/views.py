@@ -116,14 +116,27 @@ class CustomerViewSet(ModelViewSet):
             return Response(serializer.data)
 
 class OrderViewSet(ModelViewSet):
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
+        user = self.request.user
+
+        if user.is_staff:
+            return Order.objects.all()
+        
         return Order.objects.select_related('customer').filter(customer__user_id=self.request.user.id)
+    
+    def create(self, request, *args, **kwargs):
+        serializers = POSTOrdersSerializers(context={'user_id':self.request.user.id,'request':self.request},data=request.data)
+        serializers.is_valid(raise_exception=True)
+        order = serializers.save()
+        return Response(GETOrdersSerializers(order).data)
+
+
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
             return POSTOrdersSerializers
         return GETOrdersSerializers
     
-    def get_serializer_context(self):
-        return {'user_id':self.request.user.id,'request':self.request}
+    
