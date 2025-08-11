@@ -79,7 +79,7 @@ class CartViewSet(CreateModelMixin,RetrieveModelMixin,DestroyModelMixin,GenericV
     #     return Response({'deleted':'The Cart got deleted'},status=status.HTTP_204_NO_CONTENT)
     
 class CartItemsViewSet(ModelViewSet):
-    http_method_names = ['get','post','delete','patch']
+    http_method_names = ['get','post','delete','patch','head','options']
     
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -116,7 +116,12 @@ class CustomerViewSet(ModelViewSet):
             return Response(serializer.data)
 
 class OrderViewSet(ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    http_method_names = ['get','post','delete','patch','head','options']
+
+    def get_permissions(self):
+        if self.request.method in ['PATCH','DELETE']:
+            return [IsAdminUser()]
+        return [IsAuthenticated()]
     
     def get_queryset(self):
         user = self.request.user
@@ -131,8 +136,6 @@ class OrderViewSet(ModelViewSet):
         serializers.is_valid(raise_exception=True)
         order = serializers.save()
         return Response(GETOrdersSerializers(order).data)
-
-
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
