@@ -11,6 +11,9 @@ djangorestframework = "*"
 drf-nested-routers = "*"
 djoser = "*"
 djangorestframework-simplejwt = "*"
+redis = "*"
+celery = "*"
+flower = "*"
 
 [dev-packages]
 
