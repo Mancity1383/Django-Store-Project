@@ -1,7 +1,7 @@
 from rest_framework.test import APIClient
 from rest_framework import status
 from django.contrib.auth.models import User
-from store.models import Collection
+from store.models import Collection,Product
 from model_bakery import baker
 import pytest
 
@@ -64,3 +64,50 @@ class TestRetriveCollection:
         response = client.get(f'/store/collections/{collection.id+1}/')
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+@pytest.mark.django_db
+class TestUpdateCollection:
+    def test_if_auth_user_can_modify_collection_return_403(self):
+        client = APIClient()
+        client.force_authenticate(user={})
+
+        collection = baker.make(Collection)
+        response = client.patch(f'/store/collections/{collection.id}/',{'title':'a'})
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_if_admin_user_can_modify_collection_return_200(self):
+        client = APIClient()
+        client.force_authenticate(user=User(is_staff=True))
+
+        title = 'love'
+        collection = baker.make(Collection)
+        response = client.patch(f'/store/collections/{collection.id}/',{'title':title})
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['title'] == title
+
+
+    
+
+@pytest.mark.django_db
+class TestDeleteCollection:
+    def test_if_auth_user_can_delete_collection_return_403(self):
+        client = APIClient()
+        client.force_authenticate(user=User())
+
+        collection = baker.make(Collection)
+        response = client.delete(f'/store/collections/{collection.id}/')
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_if_collection_can_be_deleted(self):
+        client = APIClient()
+        client.force_authenticate(user=User(is_staff=True))
+
+        collection = baker.make(Collection)
+        product = baker.make(Product,collection=collection)
+
+        response = client.delete(f'/store/collections/{collection.id}/')
+        
+        assert response.status_code == status.HTTP_403_FORBIDDEN

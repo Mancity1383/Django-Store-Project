@@ -1,7 +1,7 @@
 import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator,RegexValidator
 from django.core.exceptions import ValidationError
 from django.conf import settings
 
@@ -22,7 +22,7 @@ class Collection(models.Model):
         ordering = ['title']
 
 class Product(models.Model):
-    title = models.CharField(max_length=255,db_index=True)
+    title = models.CharField(max_length=255,db_index=True,validators=[RegexValidator(regex='[a-zA-Z0-9]+',message='min length is one')])
     slug = models.SlugField(blank=True)
     description = models.TextField(null=True,blank=True)
     price = models.DecimalField(max_digits=6,decimal_places=2,validators=[MinValueValidator(1)])
