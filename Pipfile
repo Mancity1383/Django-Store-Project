@@ -14,8 +14,12 @@ djangorestframework-simplejwt = "*"
 redis = "*"
 celery = "*"
 flower = "*"
+pytest = "*"
 
 [dev-packages]
+pytest = "*"
+pytest-django = "*"
+model-bakery = "*"
 
 [requires]
 python_version = "3.13"
