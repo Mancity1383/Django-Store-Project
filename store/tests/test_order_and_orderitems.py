@@ -20,13 +20,8 @@ class TestPostOrder:
         client = APIClient()
         user = baker.make(settings.AUTH_USER_MODEL)
         client.force_authenticate(user=user)
-        if not Customer.objects.filter(user=user).exists():
-            customer = baker.make(Customer,user=user)
-        else:
-            customer = Customer.objects.get(user=user)
         cart = baker.make(Cart)
         product = baker.make(Product,inventory=3)
-        inventory = product.inventory
         cartitem = baker.make(CartItem,product=product,cart=cart,quantity=1)
         response = client.post(f'/store/orders/',{'cart_id':cart.id})
 

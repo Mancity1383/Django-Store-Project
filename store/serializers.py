@@ -137,9 +137,14 @@ class POSTOrdersSerializers(serializers.ModelSerializer):
 
             customer = Customer.objects.get(user_id=user_id)
 
-            cart_items = CartItem.objects.select_related('product').filter(cart_id=cart_id)
+            cart_items = (
+                CartItem.objects
+                .select_related('product')
+                .only('quantity', 'product__title', 'product__price', 'product__inventory')
+                .filter(cart_id=cart_id)
+            )
             
-            if cart_items.count() <= 0 :
+            if not cart_items.exists() :
                 raise ValidationError({'items':"There is no item in this cart"})
             
             order = Order.objects.create(customer_id = customer.id)
