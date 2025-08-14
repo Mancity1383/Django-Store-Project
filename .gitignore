@@ -14,3 +14,7 @@ venv/
 
 .vscode/
 .idea/
+
+
+Pipfile
+Pipfile.lock
