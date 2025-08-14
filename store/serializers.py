@@ -53,7 +53,6 @@ class AddCartItemSerializers(serializers.ModelSerializer):
             cart_id = self.context['cart_id']
             
             if product.inventory >= quantity:
-                print(product.inventory)
                 try:
                     cartitem = CartItem.objects.get(cart_id=cart_id,product=product)
                     cartitem.quantity += quantity
