@@ -19,18 +19,19 @@ class TaggedItemSerilizers(serializers.ModelSerializer):
     
     def create(self, validated_data):
         with transaction.atomic():
-            product_id = self.validated_data['product_id']
+            product_id = validated_data['product_id']
 
             if Product.objects.filter(pk=product_id).exists():
                 content_type = ContentType.objects.get_for_model(Product)
                 return TaggedItem.objects.create(tag_id=self.context['tag_id'],content_type=content_type,object_id=product_id)
-            return None
+            raise serializers.ValidationError({'product_id_error':'product_id not exist'})
 
 
 
 class TagSerilizers(serializers.ModelSerializer):
     items = TaggedItemSerilizers(read_only=True,many=True)
+    tagged_item_count = serializers.IntegerField(read_only=True)
     class Meta:
         model = Tag
-        fields = ['id','title','items']
+        fields = ['id','title','tagged_item_count','items']
 
