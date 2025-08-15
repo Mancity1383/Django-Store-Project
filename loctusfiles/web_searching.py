@@ -39,22 +39,24 @@ class WebsiteUser(HttpUser):
     def delete_cart(self):
         try:
             cart_id = choice(carts_id)
+            if cart_id is not None:
+                carts_id.remove(cart_id)
+                self.client.delete(f'/store/carts/{cart_id}/',name='/store/carts/:id')
         except:
             pass
-        if cart_id is not None:
-            carts_id.remove(cart_id)
-            self.client.delete(f'/store/carts/{cart_id}/',name='/store/carts/:id')
+
         
         
     @task(1)
     def create_order(self):
         try:
             cart_id = choice(carts_id)
+            if cart_id is not None:
+                carts_id.remove(cart_id)
+                self.client.post(f'/store/orders/',name='/store/orders',json={'cart_id':cart_id})
         except:
             pass
-        if cart_id is not None:
-            carts_id.remove(cart_id)
-            self.client.post(f'/store/orders/',name='/store/orders',json={'cart_id':cart_id})
+        
 
     def on_start(self):
         response = self.client.post("/auth/jwt/create/", json={

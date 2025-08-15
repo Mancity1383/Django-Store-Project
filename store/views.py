@@ -118,6 +118,7 @@ class CustomerViewSet(ModelViewSet):
 
 class OrderViewSet(ModelViewSet):
     http_method_names = ['get','post','delete','patch','head','options']
+    pagination_class=PageNumberPagination
 
     def get_permissions(self):
         if self.request.method in ['PATCH','DELETE']:
@@ -130,7 +131,7 @@ class OrderViewSet(ModelViewSet):
         if user.is_staff:
             return Order.objects.all()
         
-        return Order.objects.select_related('customer').filter(customer__user_id=self.request.user.id)
+        return Order.objects.select_related('customer__user','customer').prefetch_related('items','items__product').filter(customer__user_id=self.request.user.id)
     
     def create(self, request, *args, **kwargs):
         serializers = POSTOrdersSerializers(context={'user_id':self.request.user.id,'request':self.request},data=request.data)
